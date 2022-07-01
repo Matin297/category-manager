@@ -1,5 +1,6 @@
 import { useReducer } from 'react'
-import { useCategory } from './store/category-context'
+import { DragDropContext } from 'react-beautiful-dnd'
+import { useCategory, moveCategory } from './store/category-context'
 import { addCategory } from './store/category-context'
 
 import Box from "@mui/material/Box"
@@ -30,14 +31,16 @@ function AddCategory() {
 }
 
 function App() {
-  const [categories] = useCategory()
+  const [categories, dispatch] = useCategory()
 
   return (
-    <Box padding={3} display='flex' flexDirection='column' gap={3} marginX='auto' maxWidth={500}>
-      <Typography variant="h4"> Category Manager </Typography>
-      <List dense><Categories category={categories['p']} /></List>
-      <AddCategory />
-    </Box>
+    <DragDropContext onDragEnd={props => moveCategory(props, dispatch)}>
+      <Box padding={3} display='flex' flexDirection='column' gap={3} marginX='auto' maxWidth={500}>
+        <Typography variant="h4"> Category Manager </Typography>
+        <List dense><Categories category={categories['p']} /></List>
+        <AddCategory />
+      </Box>
+    </DragDropContext>
   );
 }
 

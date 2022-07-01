@@ -1,4 +1,5 @@
 import { useReducer } from 'react'
+import { Droppable, Draggable } from 'react-beautiful-dnd'
 import { useCategory, addCategory, removeCategory } from './store/category-context'
 
 import Box from '@mui/material/Box'
@@ -47,31 +48,46 @@ function CategoryItem({ name, id, parentId }) {
 function CategoryList({ category, parentId }) {
     const [categories] = useCategory()
 
-    if (category.subCategories.length > 0) 
-        return (
-            <>
-                { category.name && <CategoryItem parentId={parentId} {...category} /> }
-                <Box paddingLeft={2}>
-                    {
-                        category.subCategories.map(categoryId => {
-                            const categoryData = categories[categoryId]
-                            return (
-                                <CategoryList 
-                                    key={categoryData.id} 
-                                    category={categoryData} 
-                                    parentId={category.id} 
-                                />
-                            )
-                        })
-                    }
-                </Box>
-            </>
-            
-        )
-    
-    if (category.name) return <CategoryItem parentId={parentId} {...category} />
-
-    return null
+    return (
+        <Droppable droppableId={`${category.id}`} type={`${parentId}`}>
+            {(provided, snapshot) => (
+                <div
+                    ref={provided.innerRef}
+                    style={{ 
+                        backgroundColor: snapshot.isDraggingOver ? 'blue' : 'white',
+                    }}
+                    {...provided.droppableProps}
+                >
+                    {category.name && <CategoryItem parentId={parentId} {...category} />}
+                    <Box paddingLeft={2} minHeight={3}>
+                        {
+                            category.subCategories.map((categoryId, categoryInx) => {
+                                const categoryData = categories[categoryId]
+                                return (
+                                    <Draggable key={categoryData.id} draggableId={`${categoryId}`} index={categoryInx}>
+                                        {(providedDrag, dragSnapshot) => (
+                                            <div
+                                                ref={providedDrag.innerRef}
+                                                style={{
+                                                    backgroundColor: dragSnapshot.isDragging ? 'red' : 'blue',
+                                                }}
+                                                {...providedDrag.draggableProps}
+                                                {...providedDrag.dragHandleProps}
+                                            >
+                                                <CategoryList category={categoryData} parentId={category.id}/>
+                                            </div>
+                                        )}
+                                    </Draggable>
+                                )
+                            })
+                        }
+                    </Box>
+                    {provided.placeholder}
+                </div>
+            )}
+        </Droppable>
+        
+    )
 }
 
 export default CategoryList;

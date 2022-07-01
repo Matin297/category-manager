@@ -3,9 +3,11 @@ import DATA from '../data'
 
 const ADD_CATEGORY = 'ADD_CATEGORY'
 const REMOVE_CATEGORY = 'REMOVE_CATEGORY'
+const MOVE_CATEGORY = 'MOVE_CATEGORY'
 
 export const addCategory = (payload, dispatch) => dispatch({ type: ADD_CATEGORY, payload })
 export const removeCategory = (payload, dispatch) => dispatch({ type: REMOVE_CATEGORY, payload })
+export const moveCategory = (payload, dispatch) => dispatch({ type: MOVE_CATEGORY, payload })
 
 function categoriesReducer(state, { type, payload }) {
     switch(type) {
@@ -44,6 +46,44 @@ function categoriesReducer(state, { type, payload }) {
         return newState;
       }
 
+      case MOVE_CATEGORY: {
+        const { source, destination } = payload;
+
+        // dropped outside the list
+        if (!destination) {
+          return;
+        }
+        const sourceId = +source.droppableId || source.droppableId;
+        const destinationId = +destination.droppableId || destination.droppableId;
+
+        const srcParent = state[sourceId]
+        const destParent = state[destinationId]
+
+        if (sourceId === destinationId) {
+          const subCategories = reorder(srcParent.subCategories, source.index, destination.index);
+          return {
+            ...state,
+            [sourceId]: {
+              ...srcParent,
+              subCategories
+            }
+          }
+        } 
+        
+        const result = move(srcParent.subCategories, destParent.subCategories, source, destination);
+        return {
+          ...state,
+          [sourceId]: {
+            ...srcParent,
+            subCategories: result[sourceId]
+          },
+          [destinationId]: {
+            ...destParent,
+            subCategories: result[destinationId]
+          }
+        }
+      }
+
       default: 
         return state;
     }
@@ -69,3 +109,25 @@ function removeCategoryRecursive(data, id) {
   category.subCategories.forEach(categoryId => removeCategoryRecursive(data, categoryId))
   delete data[category.id]
 }
+
+function reorder(list, startIndex, endIndex) {
+  const result = Array.from(list);
+  const [removed] = result.splice(startIndex, 1);
+  result.splice(endIndex, 0, removed);
+
+  return result;
+};
+
+function move(source, destination, droppableSource, droppableDestination) {
+  const sourceClone = Array.from(source);
+  const destClone = Array.from(destination);
+  const [removed] = sourceClone.splice(droppableSource.index, 1);
+
+  destClone.splice(droppableDestination.index, 0, removed);
+
+  const result = {};
+  result[droppableSource.droppableId] = sourceClone;
+  result[droppableDestination.droppableId] = destClone;
+
+  return result;
+};
